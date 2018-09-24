@@ -86,7 +86,7 @@ class Blockchain:
         network = self.nodes
         longest_chain = None
         max_length = len(self.chain)
-        for nodes in network:
+        for node in network:
             # make a request with different port number
             response = requests.get(f'http://{node}/get_chain')
             if response.status == 200:
@@ -106,6 +106,9 @@ class Blockchain:
 # create a web app
 app = Flask(__name__)
 
+# create an address for the node on Port 5000
+node_address = str(uuid4()).replace('-','')
+
 # create a block chain
 blockchain = Blockchain()
 
@@ -116,12 +119,14 @@ def mine_block():
     previous_proof = previous_block['proof']
     proof = blockchain.proof_of_work(previous_proof)
     previous_hash = blockchain.hash(previous_block)
+    blockchain.add_transaction(sender = node_address, receiver = 'Minfeng', amount = 1)
     block = blockchain.create_block(proof, previous_hash)
     response = {'message': 'Congratulations! You just mined a block.',
                 'index': block['index'],
                 'timestamp': block['timestamp'],
                 'proof': block['proof'],
-                'previous_hash': block['previous_hash']}
+                'previous_hash': block['previous_hash'],
+                'transactions': block['transactions']}
     return jsonify(response), 200
 
 # get the full blockchain
@@ -140,6 +145,20 @@ def is_valid():
         response = {'message': 'The blockchain is not valid'}
     return jsonify(response), 200
 
+# add a new transaction to the blockchain
+@app.route('/add_transaction', methods = ['POST'])
+def add_transaction():
+    json = request.get_json()
+    transaction_keys = ['sender', 'receiver', 'amount']
+    if not all (key in json for key in transaction_keys):
+        return 'Missing some keys for the transaction information', 400, 
+    sender = json['sender']
+    receiver = json['receiver']
+    amount = json['amount']
+    index = blockchain.add_transaction(sender, receiver, amount)
+    response = {'message': f'This transaction will be added to Block {index} from {sender} to {receiver} with {amount} M coins'}
+    return jsonify(response), 201
+    
 ####################################
 # Decentralize the blockchain
 ####################################

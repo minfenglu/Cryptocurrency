@@ -99,6 +99,7 @@ class Blockchain:
             self.chain = longest_chain
             return True
         return False
+    
 ####################################        
 # mine the Blockchain
 ####################################        
